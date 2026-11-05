@@ -193,6 +193,38 @@ const AI_PROVIDERS = [
         'ms-cmark-node'
       ]
     }
+  },
+  {
+    id: 'venice',
+    name: 'Venice AI',
+    subtitle: 'Uncensored / Private',
+    url: 'https://venice.ai/chat',
+    color: '#E63946',
+    shortcut: '⌘8',
+    keyIndex: '8',
+    icon: '🔴',
+    selectors: {
+      input: [
+        'textarea[name="prompt"]',
+        'textarea[placeholder]',
+        'form textarea',
+        'textarea',
+        'div[contenteditable="true"]'
+      ],
+      submit: [
+        'button[type="submit"]',
+        'button[aria-label*="Send"]',
+        'button[aria-label*="Submit"]',
+        'form button:last-of-type'
+      ],
+      messages: [
+        '[data-role="assistant"]',
+        '[data-message-author-role="assistant"]',
+        '.prose',
+        '.markdown-body',
+        '.markdown'
+      ]
+    }
   }
 ];
 
@@ -224,6 +256,13 @@ const WORKSPACE_PRESETS = [
     description: 'ChatGPT + Claude + Gemini + DeepSeek',
     layout: '2x2',
     providers: ['chatgpt', 'claude', 'gemini', 'deepseek']
+  },
+  {
+    id: 'venice-compare',
+    name: 'Venice + Claude',
+    description: 'Venice AI + Claude affiancati',
+    layout: '2x',
+    providers: ['venice', 'claude']
   }
 ];
 

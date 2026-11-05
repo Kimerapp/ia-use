@@ -74,6 +74,7 @@ app.on('web-contents-created', (_event, contents) => {
         url.includes('perplexity.ai') ||
         url.includes('deepseek.com') ||
         url.includes('grok.com') ||
+        url.includes('venice.ai') ||
         url.includes('x.com') ||
         url.includes('twitter.com');
 
@@ -173,6 +174,11 @@ function buildAppMenu() {
           label: 'Google AI Studio',
           accelerator: 'CmdOrCtrl+7',
           click: () => sendShortcut({ type: 'provider', id: 'aistudio' })
+        },
+        {
+          label: 'Venice AI',
+          accelerator: 'CmdOrCtrl+8',
+          click: () => sendShortcut({ type: 'provider', id: 'venice' })
         },
         { type: 'separator' },
         {
