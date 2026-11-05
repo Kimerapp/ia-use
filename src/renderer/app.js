@@ -110,8 +110,11 @@
           </div>
         </div>
         <div class="pane-header-right">
+          <button class="pane-relay-btn" data-action="append-doc" title="Aggiungi la risposta (o selezione) di ${provider.name} in coda al Documento Staffetta">
+            ➕ Al Doc
+          </button>
           <button class="pane-relay-btn" data-action="capture" title="Cattura l'ultima risposta o il testo selezionato da ${provider.name}">
-            📥 Cattura risposta
+            📥 Cattura
           </button>
           <button class="pane-relay-btn accent" data-action="quick-relay" title="Invia la risposta di ${provider.name} a un'altra AI in 1 click">
             ⚡ Passa a…
@@ -185,6 +188,9 @@
       }
       if (action === 'quick-relay') {
         await captureFromProvider(provider.id, true);
+      }
+      if (action === 'append-doc') {
+        await appendProviderOutputToDoc(provider.id, false);
       }
     });
 
@@ -800,9 +806,242 @@
     }
   });
 
+  // ==========================================
+  // DOCUMENTO A STAFFETTA (60% AI #1 -> 40% AI #2)
+  // ==========================================
+  const docStudioEl = document.getElementById('doc-studio');
+  const docTopicInput = document.getElementById('doc-topic-input');
+  const selRelayAi1 = document.getElementById('sel-relay-ai-1');
+  const selRelayAi2 = document.getElementById('sel-relay-ai-2');
+  const rngSplitPct = document.getElementById('rng-split-pct');
+  const unifiedDocTextarea = document.getElementById('unified-doc-textarea');
+  const docStatsEl = document.getElementById('doc-stats');
+
+  function initDocStudio() {
+    if (!selRelayAi1 || !selRelayAi2) return;
+
+    selRelayAi1.innerHTML = '';
+    selRelayAi2.innerHTML = '';
+    for (const p of AI_PROVIDERS) {
+      const opt1 = document.createElement('option');
+      opt1.value = p.id;
+      opt1.textContent = p.name;
+      selRelayAi1.appendChild(opt1);
+
+      const opt2 = document.createElement('option');
+      opt2.value = p.id;
+      opt2.textContent = p.name;
+      selRelayAi2.appendChild(opt2);
+    }
+
+    selRelayAi1.value = 'chatgpt';
+    selRelayAi2.value = AI_PROVIDERS.some((p) => p.id === 'venice') ? 'venice' : 'claude';
+
+    unifiedDocTextarea.value = localStorage.getItem('ia_use_unified_doc') || '';
+    updateDocStudioLabels();
+    updateDocStats();
+  }
+
+  function updateDocStudioLabels() {
+    const pct1 = Number(rngSplitPct.value) || 60;
+    const pct2 = 100 - pct1;
+    const p1 = getProvider(selRelayAi1.value) || AI_PROVIDERS[0];
+    const p2 = getProvider(selRelayAi2.value) || AI_PROVIDERS[1];
+
+    document.getElementById('lbl-pct-1').textContent = `${pct1}%`;
+    document.getElementById('lbl-pct-2').textContent = `${pct2}%`;
+    document.getElementById('slider-caption-left').textContent = `${pct1}% su ${p1.name}`;
+    document.getElementById('slider-caption-right').textContent = `${pct2}% su ${p2.name}`;
+
+    document.getElementById('btn-pct-1').textContent = `${pct1}%`;
+    document.getElementById('btn-ai-1').textContent = p1.name;
+    document.getElementById('btn-pct-2').textContent = `${pct2}%`;
+    document.getElementById('btn-ai-2').textContent = p2.name;
+    document.getElementById('btn-ai-2-end').textContent = p2.name;
+  }
+
+  function updateDocStats() {
+    const text = unifiedDocTextarea.value || '';
+    localStorage.setItem('ia_use_unified_doc', text);
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    docStatsEl.textContent = `${words} parole · ${text.length} caratteri`;
+  }
+
+  async function appendProviderOutputToDoc(providerId, replaceAll = false) {
+    const entry = ensurePaneMounted(providerId);
+    if (!entry) return null;
+
+    try {
+      const script = buildCaptureResponseScript(entry.provider);
+      const res = await entry.webview.executeJavaScript(script);
+      if (!res || !res.ok || !res.text) {
+        showToast(res?.reason || `Nessuna risposta trovata su ${entry.provider.name}.`, '#EF4444');
+        return null;
+      }
+
+      docStudioEl.classList.remove('collapsed');
+      if (replaceAll || !unifiedDocTextarea.value.trim()) {
+        unifiedDocTextarea.value = res.text.trim();
+      } else {
+        unifiedDocTextarea.value = `${unifiedDocTextarea.value.trim()}\n\n${res.text.trim()}`;
+      }
+      updateDocStats();
+      showToast(`📄 Aggiunto al Documento da ${entry.provider.name}`, entry.provider.color);
+      return res.text.trim();
+    } catch (_err) {
+      showToast(`Errore durante la lettura da ${entry.provider.name}.`, '#EF4444');
+      return null;
+    }
+  }
+
+  document.getElementById('btn-toggle-doc-studio')?.addEventListener('click', () => {
+    docStudioEl.classList.toggle('collapsed');
+  });
+
+  document.getElementById('btn-close-doc-studio')?.addEventListener('click', () => {
+    docStudioEl.classList.add('collapsed');
+  });
+
+  rngSplitPct?.addEventListener('input', updateDocStudioLabels);
+  selRelayAi1?.addEventListener('change', updateDocStudioLabels);
+  selRelayAi2?.addEventListener('change', updateDocStudioLabels);
+  unifiedDocTextarea?.addEventListener('input', updateDocStats);
+
+  // Step 1: Generate first X% (e.g. 60%) on AI #1
+  document.getElementById('btn-step1-generate')?.addEventListener('click', async () => {
+    const topic = docTopicInput.value.trim();
+    if (!topic) {
+      docTopicInput.focus();
+      showToast('Inserisci prima l\'argomento della ricerca/documento nel campo in alto!', '#F59E0B');
+      return;
+    }
+
+    const pct1 = Number(rngSplitPct.value) || 60;
+    const pct2 = 100 - pct1;
+    const ai1Id = selRelayAi1.value;
+    const ai2Id = selRelayAi2.value;
+
+    // Put AI #1 and AI #2 side-by-side in 2x Split so user sees both
+    if (ai1Id !== ai2Id) {
+      state.layoutMode = '2x';
+      state.visibleProviders = [ai1Id, ai2Id];
+    } else {
+      state.layoutMode = '1x';
+      state.visibleProviders = [ai1Id];
+    }
+    state.focusedProvider = ai1Id;
+    saveState();
+    updateUI();
+
+    const promptStep1 = `Devo realizzare una ricerca/documento completo su: "${topic}".\n\nLavoriamo a staffetta tra due intelligenze artificiali:\n1. All'inizio proponi un Indice strutturato di tutto il documento (100%).\n2. Subito dopo, sviluppa e scrivi per intero, in modo approfondito e ben formattato, SOLO il primo ${pct1}% dei capitoli previsti dall'indice.\n3. Fermati esattamente al ${pct1}% senza scrivere i capitoli finali né la conclusione (che verranno completati per il restante ${pct2}% dalla seconda AI).`;
+
+    await dispatchPromptToProviders([ai1Id], promptStep1, true);
+  });
+
+  // Step 2: Capture first X% from AI #1, save in Unified Doc, and send to AI #2 to complete remaining Y%
+  document.getElementById('btn-step2-handover')?.addEventListener('click', async () => {
+    const pct1 = Number(rngSplitPct.value) || 60;
+    const pct2 = 100 - pct1;
+    const ai1Id = selRelayAi1.value;
+    const ai2Id = selRelayAi2.value;
+    const p1 = getProvider(ai1Id);
+    const topic = docTopicInput.value.trim();
+
+    const capturedPart1 = await appendProviderOutputToDoc(ai1Id, true);
+    if (!capturedPart1) return;
+
+    state.focusedProvider = ai2Id;
+    if (!state.visibleProviders.includes(ai2Id)) {
+      state.layoutMode = '2x';
+      state.visibleProviders = [ai1Id, ai2Id];
+    }
+    saveState();
+    updateUI();
+
+    const promptStep2 = `Sto realizzando una ricerca/documento${topic ? ` su "${topic}"` : ''}. Qui sotto trovi il primo ${pct1}% già scritto da ${p1.name}.\n\nIl tuo compito è scrivere il restante ${pct2}% del documento:\n- Riprendi ESATTAMENTE dal punto o capitolo in cui si è interrotto ${p1.name}.\n- NON ripetere l'introduzione o i capitoli già svolti e NON aggiungere preamboli conversazionali ("Certamente, ecco il seguito...").\n- Mantieni lo stesso stile e porta a termine i capitoli rimanenti fino alla conclusione completa.\n\n---\n${capturedPart1}\n---`;
+
+    await dispatchPromptToProviders([ai2Id], promptStep2, true);
+  });
+
+  // Step 3: Capture remaining Y% from AI #2 and append seamlessly to Unified Document
+  document.getElementById('btn-step3-append')?.addEventListener('click', async () => {
+    const ai2Id = selRelayAi2.value;
+    await appendProviderOutputToDoc(ai2Id, false);
+  });
+
+  // Export & Copy Unified Document
+  document.getElementById('btn-doc-copy')?.addEventListener('click', () => {
+    const text = unifiedDocTextarea.value.trim();
+    if (!text) {
+      showToast('Il documento è vuoto.');
+      return;
+    }
+    window.electronAPI?.copyText(text);
+    showToast('📋 Documento completo copiato negli appunti!', '#10B981');
+  });
+
+  function downloadFile(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  document.getElementById('btn-doc-export-md')?.addEventListener('click', () => {
+    const text = unifiedDocTextarea.value.trim();
+    if (!text) {
+      showToast('Il documento è vuoto.');
+      return;
+    }
+    const slug = (docTopicInput.value.trim() || 'ricerca-staffetta-ai')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+    downloadFile(`${slug || 'documento'}.md`, text, 'text/markdown;charset=utf-8');
+    showToast('💾 Scaricato file Markdown (.md)');
+  });
+
+  document.getElementById('btn-doc-export-doc')?.addEventListener('click', () => {
+    const text = unifiedDocTextarea.value.trim();
+    if (!text) {
+      showToast('Il documento è vuoto.');
+      return;
+    }
+    const title = docTopicInput.value.trim() || 'Documento Ricerca';
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const paragraphsHtml = text
+      .split(/\n\n+/)
+      .map((para) => {
+        const clean = para.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        if (clean.startsWith('# ')) return `<h1>${clean.slice(2)}</h1>`;
+        if (clean.startsWith('## ')) return `<h2>${clean.slice(3)}</h2>`;
+        if (clean.startsWith('### ')) return `<h3>${clean.slice(4)}</h3>`;
+        return `<p>${clean.replace(/\n/g, '<br/>')}</p>`;
+      })
+      .join('\n');
+
+    const wordHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>${title}</title>
+<style>body { font-family: Calibri, Arial, sans-serif; font-size: 11.5pt; line-height: 1.5; }</style>
+</head><body>${paragraphsHtml}</body></html>`;
+
+    downloadFile(`${slug || 'ricerca'}.doc`, wordHtml, 'application/msword;charset=utf-8');
+    showToast('💾 Scaricato documento Word (.doc)');
+  });
+
+  document.getElementById('btn-doc-clear')?.addEventListener('click', () => {
+    unifiedDocTextarea.value = '';
+    updateDocStats();
+    showToast('🗑️ Foglio unificato svuotato');
+  });
+
   // Boot
   normalizeVisibleProviders();
   renderPresets();
   renderCapturedHistory();
+  initDocStudio();
   updateUI();
 })();

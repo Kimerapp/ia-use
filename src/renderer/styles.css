@@ -1138,3 +1138,231 @@ kbd {
     transform: translateY(0);
   }
 }
+
+/* ==========================================
+   DOCUMENTO STAFFETTA STUDIO PANEL
+   ========================================== */
+.action-pill-btn.doc-studio-btn {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #A7F3D0;
+}
+
+.action-pill-btn.doc-studio-btn:hover {
+  background: rgba(16, 185, 129, 0.24);
+}
+
+.doc-studio {
+  width: 370px;
+  min-width: 370px;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 12px;
+  transition: margin-right 0.18s ease;
+  z-index: 18;
+}
+
+.doc-studio.collapsed {
+  margin-right: -370px;
+}
+
+.doc-studio-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.doc-studio-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.doc-studio-subtitle {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.doc-pipeline-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.pipeline-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pipeline-field label,
+.pipeline-ai-col label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.pipeline-field input,
+.pipeline-ai-col select {
+  background: var(--bg-app);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  outline: none;
+}
+
+.pipeline-field input:focus,
+.pipeline-ai-col select:focus {
+  border-color: var(--accent-primary);
+}
+
+.pipeline-split-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.pipeline-ai-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pipeline-arrow {
+  padding-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.pipeline-slider-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pipeline-slider-wrap input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+.pipeline-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.pipeline-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.pipeline-step-btn {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--bg-app);
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.pipeline-step-btn:hover {
+  background: var(--bg-hover);
+}
+
+.pipeline-step-btn.step-primary {
+  border-left: 3px solid #10A37F;
+}
+
+.pipeline-step-btn.step-accent {
+  border-left: 3px solid #6366F1;
+}
+
+.pipeline-step-btn.step-success {
+  border-left: 3px solid #10B981;
+}
+
+.doc-editor-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+.doc-editor-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.doc-editor-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.doc-stats {
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+#unified-doc-textarea {
+  flex: 1;
+  width: 100%;
+  background: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  line-height: 1.55;
+  resize: none;
+  outline: none;
+  user-select: text;
+}
+
+#unified-doc-textarea:focus {
+  border-color: var(--border-focus);
+}
+
+.doc-export-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mini-btn.primary {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #E0E7FF;
+}
+

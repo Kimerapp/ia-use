@@ -268,6 +268,12 @@ const WORKSPACE_PRESETS = [
 
 const RELAY_TEMPLATES = [
   {
+    id: 'handover',
+    label: '🏃 Staffetta (Completa da qui)',
+    buildPrompt: (sourceName, content, customNote) =>
+      `${customNote ? customNote + '\n\n' : ''}Sto realizzando un documento/ricerca. Qui sotto trovi la prima parte già redatta da ${sourceName}. Riprendi ESATTAMENTE dall'ultimo punto senza ripetere ciò che è già stato scritto e senza frasi introduttive ("Certamente, ecco..."). Mantieni lo stesso stile e porta a termine il documento sviluppando le parti mancanti fino alla conclusione:\n\n---\n${content}\n---`
+  },
+  {
     id: 'verify',
     label: '🔍 Verifica & Critica',
     buildPrompt: (sourceName, content, customNote) =>
