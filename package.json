@@ -1,0 +1,26 @@
+{
+  "name": "ia-use",
+  "version": "1.0.0",
+  "description": "Multi-AI Desktop Workspace & Context Orchestrator (ChatGPT, Claude, Gemini, Perplexity, DeepSeek, Grok)",
+  "main": "src/main/main.js",
+  "scripts": {
+    "prestart": "node scripts/ensure-electron.js",
+    "start": "electron ."
+  },
+  "keywords": [
+    "ai",
+    "chatgpt",
+    "claude",
+    "gemini",
+    "perplexity",
+    "deepseek",
+    "grok",
+    "workspace",
+    "electron"
+  ],
+  "author": "Angelo Raucci",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^34.0.0"
+  }
+}
