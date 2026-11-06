@@ -177,7 +177,7 @@
       if (action === 'back' && webview.canGoBack()) webview.goBack();
       if (action === 'forward' && webview.canGoForward()) webview.goForward();
       if (action === 'reload') webview.reload();
-      if (action === 'home') webview.loadURL(provider.url);
+      if (action === 'home') webview.loadURL(new URL(provider.url, window.location.href).href);
       if (action === 'external') {
         const currentUrl = webview.getURL() || provider.url;
         try { await window.electronAPI.openExternal(currentUrl); }
@@ -869,7 +869,11 @@
     }
 
     selRelayAi1.value = 'chatgpt';
-    selRelayAi2.value = AI_PROVIDERS.some((p) => p.id === 'venice') ? 'venice' : 'claude';
+    selRelayAi2.value = AI_PROVIDERS.some((p) => p.id === 'ollama')
+      ? 'ollama'
+      : AI_PROVIDERS.some((p) => p.id === 'venice')
+      ? 'venice'
+      : 'claude';
 
     unifiedDocTextarea.value = localStorage.getItem('ia_use_unified_doc') || '';
     setDocRelayMode('boundary');

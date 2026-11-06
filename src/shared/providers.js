@@ -216,6 +216,30 @@ const AI_PROVIDERS = [
         '.markdown'
       ]
     }
+  },
+  {
+    id: 'ollama',
+    name: 'Ollama Locale',
+    subtitle: 'Local Uncensored',
+    url: 'ollama.html',
+    color: '#F59E0B',
+    shortcut: '⌘9',
+    keyIndex: '9',
+    selectors: {
+      input: [
+        '#prompt-textarea',
+        'textarea'
+      ],
+      submit: [
+        'button[data-testid="send-button"]',
+        '#send-btn',
+        'button[type="submit"]'
+      ],
+      messages: [
+        '[data-message-author-role="assistant"] .markdown',
+        '[data-message-author-role="assistant"]'
+      ]
+    }
   }
 ];
 
@@ -233,6 +257,13 @@ const WORKSPACE_PRESETS = [
     description: 'Claude + ChatGPT in Split 2x',
     layout: '2x',
     providers: ['claude', 'chatgpt']
+  },
+  {
+    id: 'local-hybrid',
+    name: 'ChatGPT + Ollama',
+    description: 'ChatGPT Cloud + Ollama Locale Uncensored affiancati',
+    layout: '2x',
+    providers: ['chatgpt', 'ollama']
   },
   {
     id: 'research',

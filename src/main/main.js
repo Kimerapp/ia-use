@@ -1,5 +1,7 @@
 const { app, BrowserWindow, session, Menu, shell, ipcMain, clipboard, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const { spawn } = require('child_process');
 
 const CHROME_USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36';
@@ -8,6 +10,38 @@ const CHROME_USER_AGENT =
 app.userAgentFallback = CHROME_USER_AGENT;
 
 let mainWindow = null;
+
+async function ensureOllamaServerRunning() {
+  try {
+    const res = await fetch('http://127.0.0.1:11434/api/tags');
+    if (res.ok) return { ok: true, status: 'already-running' };
+  } catch (_err) {
+    // Not running yet, start ollama serve in background if installed
+  }
+
+  const candidatePaths = [
+    '/opt/homebrew/bin/ollama',
+    '/usr/local/bin/ollama',
+    '/usr/bin/ollama'
+  ];
+
+  const ollamaBin = candidatePaths.find((p) => fs.existsSync(p)) || 'ollama';
+
+  try {
+    const child = spawn(ollamaBin, ['serve'], {
+      detached: true,
+      stdio: 'ignore',
+      env: {
+        ...process.env,
+        OLLAMA_ORIGINS: '*'
+      }
+    });
+    child.unref();
+    return { ok: true, status: 'started' };
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
+}
 
 const providerHosts = ['chatgpt.com', 'claude.ai', 'gemini.google.com', 'aistudio.google.com', 'perplexity.ai', 'chat.deepseek.com', 'grok.com', 'venice.ai'];
 const authHosts = [...providerHosts, 'accounts.google.com', 'appleid.apple.com', 'auth0.com', 'login.microsoftonline.com', 'github.com', 'openai.com', 'anthropic.com', 'deepseek.com', 'x.com', 'twitter.com'];
@@ -30,6 +64,30 @@ function trustedPermissionRequest(contents, origin) {
 function configureAISession() {
   const aiSession = session.fromPartition('persist:ia-use');
   aiSession.setUserAgent(CHROME_USER_AGENT);
+
+  // Allow local Ollama <webview> to talk to 127.0.0.1:11434 without CORS issues
+  aiSession.webRequest.onBeforeSendHeaders(
+    { urls: ['http://127.0.0.1:11434/*', 'http://localhost:11434/*'] },
+    (details, callback) => {
+      const requestHeaders = { ...details.requestHeaders };
+      delete requestHeaders.Origin;
+      delete requestHeaders.origin;
+      callback({ requestHeaders });
+    }
+  );
+
+  aiSession.webRequest.onHeadersReceived(
+    { urls: ['http://127.0.0.1:11434/*', 'http://localhost:11434/*'] },
+    (details, callback) => {
+      const responseHeaders = {
+        ...details.responseHeaders,
+        'Access-Control-Allow-Origin': ['*'],
+        'Access-Control-Allow-Headers': ['*'],
+        'Access-Control-Allow-Methods': ['GET, POST, OPTIONS, DELETE']
+      };
+      callback({ responseHeaders });
+    }
+  );
   aiSession.setPermissionCheckHandler((contents, permission, origin, details) => {
     if (!trustedPermissionRequest(contents, origin)) return false;
     if (permission === 'media' || permission === 'audioCapture') {
@@ -190,6 +248,11 @@ function buildAppMenu() {
           accelerator: 'CmdOrCtrl+8',
           click: () => sendShortcut({ type: 'provider', id: 'venice' })
         },
+        {
+          label: 'Ollama Locale',
+          accelerator: 'CmdOrCtrl+9',
+          click: () => sendShortcut({ type: 'provider', id: 'ollama' })
+        },
         { type: 'separator' },
         {
           label: 'Focus Barra Multi-Prompt',
@@ -286,6 +349,7 @@ ipcMain.handle('clear-provider-session', async (event, originUrl) => {
 });
 
 app.whenReady().then(() => {
+  ensureOllamaServerRunning();
   buildAppMenu();
   createMainWindow();
 
