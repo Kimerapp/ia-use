@@ -619,11 +619,13 @@ kbd {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  width: 22px;
+  min-width: 22px;
   height: 22px;
+  padding: 0 5px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
   justify-content: center;

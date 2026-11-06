@@ -16,7 +16,7 @@
     focusedProvider: localStorage.getItem('ia_use_focused') || 'claude',
     syncTargetsWithVisible: true,
     selectedTargets: new Set(['claude', 'chatgpt']),
-    capturedContext: null, // { sourceId, sourceName, text, templateId }
+    capturedContext: null,
     capturedHistory: JSON.parse(localStorage.getItem('ia_use_clips') || '[]'),
     quickRelayState: {
       sourceId: null,
@@ -106,18 +106,18 @@
             <button class="pane-icon-btn" data-action="back" title="Indietro">←</button>
             <button class="pane-icon-btn" data-action="forward" title="Avanti">→</button>
             <button class="pane-icon-btn" data-action="reload" title="Ricarica (${provider.name})">↻</button>
-            <button class="pane-icon-btn" data-action="home" title="Nuova Chat / Home">🏠</button>
+            <button class="pane-icon-btn" data-action="home" title="Nuova Chat / Home">Home</button>
           </div>
         </div>
         <div class="pane-header-right">
           <button class="pane-relay-btn" data-action="append-doc" title="Aggiungi la risposta (o selezione) di ${provider.name} in coda al Documento Staffetta">
-            ➕ Al Doc
+            + Doc
           </button>
           <button class="pane-relay-btn" data-action="capture" title="Cattura l'ultima risposta o il testo selezionato da ${provider.name}">
-            📥 Cattura
+            Cattura
           </button>
           <button class="pane-relay-btn accent" data-action="quick-relay" title="Invia la risposta di ${provider.name} a un'altra AI in 1 click">
-            ⚡ Passa a…
+            Passa a…
           </button>
           <button class="pane-icon-btn" data-action="external" title="Apri nel browser di sistema">↗</button>
         </div>
@@ -133,7 +133,6 @@
 
     const webview = pane.querySelector('webview');
 
-    // Focus tracking
     pane.addEventListener('mousedown', () => {
       setFocusedProvider(provider.id);
     });
@@ -151,12 +150,10 @@
     });
 
     webview.addEventListener('dom-ready', () => {
-      // Inject in-page floating relay button when selecting text
       const helperScript = buildInPageRelayHelperScript(provider);
       webview.executeJavaScript(helperScript).catch(() => {});
     });
 
-    // Listen for in-page floating pill clicks (__IA_USE_RELAY__:)
     webview.addEventListener('console-message', (event) => {
       if (event.message && event.message.startsWith('__IA_USE_RELAY__:')) {
         try {
@@ -169,7 +166,6 @@
       }
     });
 
-    // Header actions
     pane.querySelector('.pane-header').addEventListener('click', async (e) => {
       const btn = e.target.closest('button[data-action]');
       if (!btn) return;
@@ -207,11 +203,9 @@
     updateUI();
   }
 
-  // Enforce layout capacity on visibleProviders
   function normalizeVisibleProviders() {
     const cap = CAPACITY_BY_LAYOUT[state.layoutMode] || 2;
 
-    // Remove duplicates & invalid IDs
     state.visibleProviders = state.visibleProviders.filter(
       (id, idx, arr) => getProvider(id) && arr.indexOf(id) === idx
     );
@@ -221,7 +215,6 @@
     }
 
     if (state.visibleProviders.length > cap) {
-      // Keep focusedProvider if present
       if (state.visibleProviders.includes(state.focusedProvider)) {
         const others = state.visibleProviders.filter((id) => id !== state.focusedProvider);
         state.visibleProviders = [state.focusedProvider, ...others].slice(0, cap);
@@ -254,7 +247,6 @@
     updateUI();
   }
 
-  // Click on provider in sidebar or Cmd+1..7
   function activateOrFocusProvider(providerId) {
     if (!getProvider(providerId)) return;
 
@@ -265,7 +257,6 @@
       if (state.visibleProviders.includes(providerId)) {
         state.focusedProvider = providerId;
       } else {
-        // Replace the currently focused pane (or last pane) with the chosen provider
         const replaceIdx = state.visibleProviders.indexOf(state.focusedProvider);
         if (replaceIdx !== -1) {
           state.visibleProviders[replaceIdx] = providerId;
@@ -284,7 +275,6 @@
     updateUI();
   }
 
-  // Toggle a provider in/out of the Split View ("Pin" button)
   function toggleProviderInSplit(providerId) {
     if (state.visibleProviders.includes(providerId)) {
       if (state.visibleProviders.length <= 1) {
@@ -337,7 +327,7 @@
       const result = await entry.webview.executeJavaScript(script);
 
       if (!result || !result.ok || !result.text) {
-        showToast(result?.reason || ` Impossibile estrarre la risposta da ${entry.provider.name}.`, '#EF4444');
+        showToast(result?.reason || `Impossibile estrarre la risposta da ${entry.provider.name}.`, '#EF4444');
         return;
       }
 
@@ -349,11 +339,11 @@
         omnibarDockEl.classList.remove('collapsed');
         omnibarInput.focus();
         showToast(
-          `📥 Risposta catturata da ${entry.provider.name} (${result.text.length} caratteri)`,
+          `Risposta catturata da ${entry.provider.name} (${result.text.length} caratteri)`,
           entry.provider.color
         );
       }
-    } catch (err) {
+    } catch (_err) {
       showToast(`Errore durante la cattura da ${entry.provider.name}. Assicurati che la pagina sia carica.`, '#EF4444');
     }
   }
@@ -371,7 +361,6 @@
       templateId: state.capturedContext?.templateId || 'verify'
     };
 
-    // Add to sidebar history if not duplicate of top item
     if (!state.capturedHistory.length || state.capturedHistory[0].text !== text) {
       state.capturedHistory.unshift({
         id: Date.now(),
@@ -402,7 +391,7 @@
 
     relayDrawerEl.classList.remove('hidden');
     const ctx = state.capturedContext;
-    relaySourceBadgeEl.textContent = `📎 Da ${ctx.sourceName}`;
+    relaySourceBadgeEl.textContent = `Da ${ctx.sourceName}`;
     relaySourceBadgeEl.style.borderColor = ctx.sourceColor;
     relayCharCountEl.textContent = `${ctx.text.length} caratteri`;
     relayContentEditor.value = ctx.text;
@@ -426,7 +415,7 @@
     if (state.capturedHistory.length === 0) {
       capturedHistoryListEl.innerHTML = `
         <div class="empty-clips-hint">
-          Clicca <strong>"📥 Cattura risposta"</strong> su qualsiasi pannello (o seleziona del testo) per passare l'output da un'AI all'altra.
+          Clicca <strong>"Cattura"</strong> su qualsiasi pannello (o seleziona del testo) per passare l'output da un'AI all'altra.
         </div>
       `;
       return;
@@ -459,7 +448,6 @@
     const sourceProvider = getProvider(sourceId);
     if (!sourceProvider) return;
 
-    // Default target: another visible provider, or chatgpt/claude
     const defaultTarget =
       state.visibleProviders.find((id) => id !== sourceId) ||
       (sourceId === 'claude' ? 'chatgpt' : 'claude');
@@ -471,7 +459,7 @@
       targetId: defaultTarget
     };
 
-    quickRelayTitle.textContent = `⚡ Passa risposta di ${sourceProvider.name} a un'altra AI`;
+    quickRelayTitle.textContent = `Passa risposta di ${sourceProvider.name} a un'altra AI`;
     quickRelaySnippet.textContent = text;
     renderQuickRelayModalControls();
     quickRelayModal.classList.remove('hidden');
@@ -493,12 +481,11 @@
       quickRelayTargets.appendChild(btn);
     }
 
-    // Also add "Tutte le altre visibili" option
     const otherVisible = state.visibleProviders.filter((id) => id !== qr.sourceId);
     if (otherVisible.length > 1) {
       const allBtn = document.createElement('button');
       allBtn.className = `qr-target-btn ${qr.targetId === '__ALL_OTHERS__' ? 'active' : ''}`;
-      allBtn.textContent = `🎯 Tutte le altre visibili (${otherVisible.length})`;
+      allBtn.textContent = `Tutte le altre visibili (${otherVisible.length})`;
       allBtn.addEventListener('click', () => {
         state.quickRelayState.targetId = '__ALL_OTHERS__';
         renderQuickRelayModalControls();
@@ -520,7 +507,6 @@
             ? state.visibleProviders.filter((id) => id !== qr.sourceId)
             : [qr.targetId];
 
-        // Ensure target is visible on screen so user sees the result immediately
         for (const tId of targetIds) {
           if (!state.visibleProviders.includes(tId)) {
             if (state.layoutMode === '1x') {
@@ -547,7 +533,6 @@
   async function dispatchPromptToProviders(targetIds, promptText, autoSubmit) {
     if (!promptText || !promptText.trim()) return;
 
-    // Always copy to clipboard as an instant fallback
     window.electronAPI?.copyText(promptText);
 
     const succeeded = [];
@@ -573,11 +558,11 @@
     );
 
     if (succeeded.length > 0) {
-      showToast(`⚡ Inviato a: ${succeeded.join(', ')}`, '#10B981');
+      showToast(`Inviato a: ${succeeded.join(', ')}`, '#10B981');
     }
     if (failed.length > 0) {
       showToast(
-        `⚠️ Input non trovato su ${failed.join(', ')} (verifica il login; prompt copiato negli appunti).`,
+        `Input non trovato su ${failed.join(', ')} (verifica il login; prompt copiato negli appunti).`,
         '#F59E0B'
       );
     }
@@ -631,13 +616,11 @@
   }
 
   function updateUI() {
-    // 1. Update Layout Switcher buttons & Stage Grid class
     stageGrid.className = `stage-grid layout-${state.layoutMode}`;
     layoutSwitcherEl.querySelectorAll('.seg-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.layout === state.layoutMode);
     });
 
-    // 2. Ensure visible webview panes are mounted and toggle visibility
     for (const vid of state.visibleProviders) {
       ensurePaneMounted(vid);
     }
@@ -651,7 +634,6 @@
       }
     }
 
-    // 3. Render Left Sidebar Provider List
     providerListEl.innerHTML = '';
     for (const p of AI_PROVIDERS) {
       const inView = state.visibleProviders.includes(p.id);
@@ -673,7 +655,7 @@
           <button class="split-pin-btn ${inView ? 'pinned' : ''}" data-pin="${p.id}" title="${
         inView ? 'Rimuovi dallo Split-Screen' : 'Aggiungi in Split-Screen affiancato'
       }">
-            ${inView ? '✓ Split' : '+ Split'}
+            ${inView ? 'In Split' : '+ Split'}
           </button>
           <kbd>${p.shortcut}</kbd>
         </div>
@@ -691,7 +673,6 @@
       providerListEl.appendChild(item);
     }
 
-    // 4. Render Target Chips in Bottom Omnibar
     btnSelectVisibleTargets.classList.toggle('active', state.syncTargetsWithVisible);
     targetChipsEl.innerHTML = '';
     for (const p of AI_PROVIDERS) {
@@ -766,7 +747,7 @@
     const txt = relayContentEditor.value || state.capturedContext?.text || '';
     if (txt) {
       window.electronAPI?.copyText(txt);
-      showToast('📋 Testo copiato negli appunti');
+      showToast('Testo copiato negli appunti');
     }
   });
 
@@ -786,7 +767,6 @@
     }
   });
 
-  // Listen for native menu shortcuts from Electron main process
   window.electronAPI?.onShortcut((payload) => {
     if (!payload) return;
     if (payload.type === 'provider') {
@@ -822,7 +802,7 @@
   const pipelineSliderWrap = document.getElementById('pipeline-slider-wrap');
   const boundaryExplainer = document.getElementById('boundary-explainer');
 
-  let docRelayMode = 'boundary'; // 'percentage' | 'boundary'
+  let docRelayMode = 'boundary';
 
   function initDocStudio() {
     if (!selRelayAi1 || !selRelayAi2) return;
@@ -879,13 +859,13 @@
       if (role1El) role1El.innerHTML = `1ª AI (Fino al limite)`;
       if (role2El) role2El.innerHTML = `2ª AI (Senza filtri)`;
       if (step1TextEl) {
-        step1TextEl.innerHTML = `1️⃣ Fai scrivere <strong>${p1.name}</strong> fin dove può arrivare (senza rifiuti)`;
+        step1TextEl.innerHTML = `1. Fai scrivere <strong>${p1.name}</strong> fin dove può arrivare (senza rifiuti)`;
       }
       if (step2TextEl) {
-        step2TextEl.innerHTML = `2️⃣ 🔓 Cattura da <strong>${p1.name}</strong> e fai proseguire <strong>${p2.name}</strong> senza filtri`;
+        step2TextEl.innerHTML = `2. Cattura da <strong>${p1.name}</strong> e fai proseguire <strong>${p2.name}</strong> senza filtri`;
       }
       if (step3TextEl) {
-        step3TextEl.innerHTML = `3️⃣ ➕ Cattura parte non censurata da <strong>${p2.name}</strong> e unisci al Doc`;
+        step3TextEl.innerHTML = `3. Cattura parte non censurata da <strong>${p2.name}</strong> e unisci al Doc`;
       }
     } else {
       if (role1El) role1El.innerHTML = `1ª Parte (<span id="lbl-pct-1">${pct1}%</span>)`;
@@ -894,20 +874,20 @@
       document.getElementById('slider-caption-right').textContent = `${pct2}% su ${p2.name}`;
 
       if (step1TextEl) {
-        step1TextEl.innerHTML = `1️⃣ Genera il primo <strong>${pct1}%</strong> con <strong>${p1.name}</strong>`;
+        step1TextEl.innerHTML = `1. Genera il primo <strong>${pct1}%</strong> con <strong>${p1.name}</strong>`;
       }
       if (step2TextEl) {
-        step2TextEl.innerHTML = `2️⃣ 🏃 Cattura 1ª parte e fai completare il <strong>${pct2}%</strong> a <strong>${p2.name}</strong>`;
+        step2TextEl.innerHTML = `2. Cattura 1ª parte e completa il <strong>${pct2}%</strong> con <strong>${p2.name}</strong>`;
       }
       if (step3TextEl) {
-        step3TextEl.innerHTML = `3️⃣ ➕ Cattura finale da <strong>${p2.name}</strong> e unisci al Documento`;
+        step3TextEl.innerHTML = `3. Cattura finale da <strong>${p2.name}</strong> e unisci al Documento`;
       }
     }
   }
 
   function stripHandoverMarkerForDoc(rawText) {
     if (!rawText) return '';
-    const markerIndex = rawText.search(/\[⚡?\s*PASSAGGIO[^\]]*\]/i);
+    const markerIndex = rawText.search(/\[\s*PASSAGGIO[^\]]*\]/i);
     if (markerIndex !== -1) {
       return rawText.slice(0, markerIndex).trim();
     }
@@ -943,7 +923,7 @@
         unifiedDocTextarea.value = `${unifiedDocTextarea.value.trim()}\n\n${docText}`;
       }
       updateDocStats();
-      showToast(`📄 Aggiunto al Documento da ${entry.provider.name}`, entry.provider.color);
+      showToast(`Aggiunto al Documento da ${entry.provider.name}`, entry.provider.color);
       return rawExtracted;
     } catch (_err) {
       showToast(`Errore durante la lettura da ${entry.provider.name}.`, '#EF4444');
@@ -971,12 +951,11 @@
   selRelayAi2?.addEventListener('change', updateDocStudioLabels);
   unifiedDocTextarea?.addEventListener('input', updateDocStats);
 
-  // Step 1: Generate on AI #1 (either Percentage mode OR Boundary "Up to policy limit" mode)
   document.getElementById('btn-step1-generate')?.addEventListener('click', async () => {
     const topic = docTopicInput.value.trim();
     if (!topic) {
       docTopicInput.focus();
-      showToast('Inserisci prima l\'argomento della ricerca/documento nel campo in alto!', '#F59E0B');
+      showToast('Inserisci prima l\'argomento della ricerca/documento nel campo in alto.', '#F59E0B');
       return;
     }
 
@@ -985,7 +964,6 @@
     const ai1Id = selRelayAi1.value;
     const ai2Id = selRelayAi2.value;
 
-    // Put AI #1 and AI #2 side-by-side in 2x Split so user sees both
     if (ai1Id !== ai2Id) {
       state.layoutMode = '2x';
       state.visibleProviders = [ai1Id, ai2Id];
@@ -1007,7 +985,6 @@
     await dispatchPromptToProviders([ai1Id], promptStep1, true);
   });
 
-  // Step 2: Capture from AI #1, save clean prose in Unified Doc, and send to AI #2 (Venice AI)
   document.getElementById('btn-step2-handover')?.addEventListener('click', async () => {
     const pct1 = Number(rngSplitPct.value) || 60;
     const pct2 = 100 - pct1;
@@ -1044,13 +1021,11 @@
     await dispatchPromptToProviders([ai2Id], promptStep2, true);
   });
 
-  // Step 3: Capture remaining Y% from AI #2 and append seamlessly to Unified Document
   document.getElementById('btn-step3-append')?.addEventListener('click', async () => {
     const ai2Id = selRelayAi2.value;
     await appendProviderOutputToDoc(ai2Id, false);
   });
 
-  // Export & Copy Unified Document
   document.getElementById('btn-doc-copy')?.addEventListener('click', () => {
     const text = unifiedDocTextarea.value.trim();
     if (!text) {
@@ -1058,7 +1033,7 @@
       return;
     }
     window.electronAPI?.copyText(text);
-    showToast('📋 Documento completo copiato negli appunti!', '#10B981');
+    showToast('Documento completo copiato negli appunti', '#10B981');
   });
 
   function downloadFile(filename, content, mimeType) {
@@ -1082,7 +1057,7 @@
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
     downloadFile(`${slug || 'documento'}.md`, text, 'text/markdown;charset=utf-8');
-    showToast('💾 Scaricato file Markdown (.md)');
+    showToast('Scaricato file Markdown (.md)');
   });
 
   document.getElementById('btn-doc-export-doc')?.addEventListener('click', () => {
@@ -1110,13 +1085,13 @@
 </head><body>${paragraphsHtml}</body></html>`;
 
     downloadFile(`${slug || 'ricerca'}.doc`, wordHtml, 'application/msword;charset=utf-8');
-    showToast('💾 Scaricato documento Word (.doc)');
+    showToast('Scaricato documento Word (.doc)');
   });
 
   document.getElementById('btn-doc-clear')?.addEventListener('click', () => {
     unifiedDocTextarea.value = '';
     updateDocStats();
-    showToast('🗑️ Foglio unificato svuotato');
+    showToast('Foglio unificato svuotato');
   });
 
   // Boot
