@@ -7,7 +7,7 @@ function buildInjectPromptScript(provider, promptText, autoSubmit = true) {
     autoSubmit: Boolean(autoSubmit)
   });
 
-  return `(function() {
+  return `(async function() {
     const cfg = ${payload};
     function isVisible(el) {
       if (!el) return false;
@@ -27,7 +27,7 @@ function buildInjectPromptScript(provider, promptText, autoSubmit = true) {
 
     const inputEl = findElement(cfg.selectors.input);
     if (!inputEl) {
-      return { ok: false, reason: 'Campo di input non trovato nella pagina (assicurati di aver effettuato il login).' };
+      return { ok: false, code: 'input-not-found', reason: 'Campo di input non trovato nella pagina (assicurati di aver effettuato il login).' };
     }
 
     inputEl.focus();
@@ -66,7 +66,8 @@ function buildInjectPromptScript(provider, promptText, autoSubmit = true) {
     }
 
     if (cfg.autoSubmit) {
-      setTimeout(() => {
+      await new Promise(resolve => setTimeout(resolve, 160));
+      {
         const submitBtn = findElement(cfg.selectors.submit);
         if (submitBtn && !submitBtn.disabled && submitBtn.getAttribute('aria-disabled') !== 'true') {
           submitBtn.click();
@@ -81,7 +82,7 @@ function buildInjectPromptScript(provider, promptText, autoSubmit = true) {
           });
           inputEl.dispatchEvent(enterEvent);
         }
-      }, 160);
+      }
     }
 
     return { ok: true };
@@ -90,7 +91,8 @@ function buildInjectPromptScript(provider, promptText, autoSubmit = true) {
 
 function buildCaptureResponseScript(provider) {
   const payload = JSON.stringify({
-    selectors: provider.selectors
+    selectors: provider.selectors,
+    providerId: provider.id
   });
 
   return `(function() {
@@ -100,6 +102,10 @@ function buildCaptureResponseScript(provider) {
     const selected = window.getSelection ? window.getSelection().toString().trim() : '';
     if (selected && selected.length > 3) {
       return { ok: true, sourceType: 'selection', text: selected };
+    }
+
+    if (cfg.providerId === 'claude' && document.querySelectorAll('[data-is-streaming="true"]').length) {
+      return { ok: false, reason: 'Claude sta ancora scrivendo. Attendi il completamento della risposta.' };
     }
 
     // 2. Otherwise grab the latest assistant message block

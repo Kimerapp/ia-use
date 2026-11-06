@@ -50,7 +50,6 @@ const AI_PROVIDERS = [
         'fieldset button[type="button"]:last-of-type'
       ],
       messages: [
-        '[data-is-streaming="false"] .font-claude-message',
         '.font-claude-message',
         '[data-testid="chat-message-content"]'
       ]
