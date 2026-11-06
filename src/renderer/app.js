@@ -414,6 +414,12 @@
     }
   }
 
+  relayContentEditor.addEventListener('input', () => {
+    if (!state.capturedContext) return;
+    state.capturedContext.text = relayContentEditor.value;
+    relayCharCountEl.textContent = `${relayContentEditor.value.length} caratteri`;
+  });
+
   function renderCapturedHistory() {
     capturedHistoryListEl.innerHTML = '';
     if (state.capturedHistory.length === 0) {
@@ -540,6 +546,7 @@
     try { await window.electronAPI.copyText(promptText); copied = true; } catch (_) {}
     const succeeded = [];
     const failed = [];
+    const prepared = [];
     await Promise.all(targetIds.map(async (providerId) => {
       const entry = ensurePaneMounted(providerId);
       if (!entry) { failed.push(providerId); return; }
@@ -557,9 +564,12 @@
           if (result?.ok || result?.code !== 'input-not-found') break;
           await new Promise(resolve => setTimeout(resolve, 300));
         }
-        if (result?.ok) succeeded.push(entry.provider.name);
-        else failed.push(entry.provider.name);
-      } catch (_) { failed.push(entry.provider.name); }
+        if (result?.ok) succeeded.push(providerId);
+        else {
+          failed.push(providerId);
+          if (result?.code === 'submit-unavailable') prepared.push(providerId);
+        }
+      } catch (_) { failed.push(providerId); }
       finally {
         if (hidden) {
           if (oldStyle === null) entry.pane.removeAttribute('style');
@@ -567,9 +577,17 @@
         }
       }
     }));
-    if (succeeded.length) showToast(`Inviato a: ${succeeded.join(', ')}`, '#10B981');
-    if (failed.length) showToast(`Invio non riuscito su ${failed.join(', ')}: verifica il login e attendi il caricamento.${copied ? ' Prompt copiato negli appunti.' : ' Copia il prompt prima di riprovare.'}`, '#F59E0B');
-    return { succeeded, failed };
+    const names = ids => ids.map(id => getProvider(id)?.name || id).join(', ');
+    if (succeeded.length) showToast(`${autoSubmit ? 'Inviato' : 'Preparato'} su: ${names(succeeded)}`, '#10B981');
+    if (failed.length) {
+      const notReady = failed.filter(id => !prepared.includes(id));
+      const details = [];
+      if (prepared.length) details.push(`Testo inserito ma non inviato su ${names(prepared)}: pulsante di invio non disponibile.`);
+      if (notReady.length) details.push(`Invio non riuscito su ${names(notReady)}: verifica il login e il caricamento.`);
+      showToast(`${details.join(' ')}${copied ? ' Prompt copiato negli appunti.' : ''}`, '#F59E0B');
+    }
+    return { succeeded, failed, prepared };
+
   }
 
   let omnibarSending = false;
@@ -587,7 +605,8 @@
 
     let finalPrompt = customNote;
     if (hasRelay) {
-      const editedContext = relayContentEditor.value.trim() || state.capturedContext.text;
+      const editedContext = relayContentEditor.value.trim();
+      if (!editedContext) { showToast('Il contesto è vuoto. Inserisci del testo o chiudi il contesto.', '#F59E0B'); return; }
       const tpl =
         RELAY_TEMPLATES.find((t) => t.id === state.capturedContext.templateId) || RELAY_TEMPLATES[0];
       finalPrompt = tpl.buildPrompt(state.capturedContext.sourceName, editedContext, customNote);
@@ -599,14 +618,30 @@
       return;
     }
 
+    const syncAtSend = state.syncTargetsWithVisible;
+    const autoSubmitAtSend = chkAutoSubmit.checked;
+    const templateAtSend = relayAtSend?.templateId;
     omnibarSending = true;
     let result;
-    try { result = await dispatchPromptToProviders(targets, finalPrompt, chkAutoSubmit.checked); }
+    try { result = await dispatchPromptToProviders(targets, finalPrompt, autoSubmitAtSend); }
     finally { omnibarSending = false; }
+    const unchanged = omnibarInput.value.trim() === customNote &&
+      state.capturedContext === relayAtSend && relayContentEditor.value === relayTextAtSend &&
+      relayAtSend?.templateId === templateAtSend && chkAutoSubmit.checked === autoSubmitAtSend &&
+      state.syncTargetsWithVisible === syncAtSend && state.selectedTargets.size === targets.length &&
+      targets.every(id => state.selectedTargets.has(id));
+    if (result.failed.length && result.succeeded.length && unchanged) {
+      state.syncTargetsWithVisible = false;
+      state.selectedTargets = new Set(result.failed);
+      updateUI();
+      const names = ids => ids.map(id => getProvider(id)?.name || id).join(', ');
+      const preparedNotice = result.prepared.length ? ` Testo inserito ma non inviato su ${names(result.prepared)}.` : '';
+      showToast(`Per riprovare sono selezionati solo: ${names(result.failed)}.${preparedNotice} Controlla i pannelli prima di riprovare.`, '#F59E0B');
+    }
     if (!result.failed.length && omnibarInput.value.trim() === customNote) {
       omnibarInput.value = '';
       omnibarInput.style.height = 'auto';
-      if (hasRelay && state.capturedContext === relayAtSend && relayContentEditor.value === relayTextAtSend) clearCapturedContext();
+      if (hasRelay && state.capturedContext === relayAtSend && relayContentEditor.value === relayTextAtSend && relayAtSend.templateId === templateAtSend) clearCapturedContext();
     }
 
   }

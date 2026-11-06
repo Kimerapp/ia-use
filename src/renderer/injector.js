@@ -66,23 +66,17 @@ function buildInjectPromptScript(provider, promptText, autoSubmit = true) {
     }
 
     if (cfg.autoSubmit) {
-      await new Promise(resolve => setTimeout(resolve, 160));
-      {
-        const submitBtn = findElement(cfg.selectors.submit);
+      const deadline = Date.now() + 3000;
+      let submitBtn = null;
+      do {
+        await new Promise(resolve => setTimeout(resolve, 160));
+        submitBtn = findElement(cfg.selectors.submit);
         if (submitBtn && !submitBtn.disabled && submitBtn.getAttribute('aria-disabled') !== 'true') {
           submitBtn.click();
-        } else {
-          const enterEvent = new KeyboardEvent('keydown', {
-            key: 'Enter',
-            code: 'Enter',
-            keyCode: 13,
-            which: 13,
-            bubbles: true,
-            cancelable: true
-          });
-          inputEl.dispatchEvent(enterEvent);
+          return { ok: true };
         }
-      }
+      } while (Date.now() < deadline);
+      return { ok: false, code: 'submit-unavailable' };
     }
 
     return { ok: true };

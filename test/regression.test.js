@@ -112,3 +112,19 @@ test('hidden target remains available until submit button is clicked once', asyn
   assert.equal((await result).ok, true);
   assert.equal(clicks, 1);
 });
+
+test('disabled submit reports prepared text without simulating Enter', async () => {
+  const provider = { selectors: { input: ['textarea'], submit: ['button'] } };
+  let enterEvents = 0;
+  const input = { tagName: 'TEXTAREA', focus() {}, dispatchEvent(event) { if (event.type === 'keydown') enterEvents++; }, getBoundingClientRect: () => ({ width: 20, height: 20 }) };
+  const button = { disabled: true, click() { throw new Error('disabled button clicked'); }, getAttribute: () => 'true', getBoundingClientRect: () => ({ width: 20, height: 20 }) };
+  const window = { getComputedStyle: () => ({ visibility: 'visible' }), HTMLTextAreaElement: function() {} };
+  const result = await vm.runInNewContext(injector().buildInjectPromptScript(provider, 'hello', true), {
+    window, document: { querySelectorAll: selector => selector === 'textarea' ? [input] : [button] },
+    InputEvent: class { constructor(type) { this.type = type; } }, Event: class { constructor(type) { this.type = type; } }, KeyboardEvent: class { constructor(type) { this.type = type; } }, setTimeout: fn => fn(), Date: class extends Date { static now() { return now += 1000; } }
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'submit-unavailable');
+  assert.equal(enterEvents, 0);
+});
+let now = 0;
