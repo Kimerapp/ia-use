@@ -156,7 +156,7 @@ function buildInPageRelayHelperScript(provider) {
 
     const btn = document.createElement('button');
     btn.id = '__ia_use_floating_relay__';
-    btn.innerHTML = '⚡ Invia a un\\'altra AI';
+    btn.textContent = 'Invia a un\\'altra AI →';
     Object.assign(btn.style, {
       position: 'fixed',
       zIndex: '2147483647',

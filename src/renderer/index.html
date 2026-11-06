@@ -28,16 +28,16 @@
     <div class="topbar-center">
       <div class="segmented-control" id="layout-switcher" role="group" aria-label="Modalità Layout">
         <button class="seg-btn" data-layout="1x" title="Vista Singola Focus (⇧⌘1)">
-          <span class="seg-icon">▢</span> 1x Focus
+          1x Focus
         </button>
         <button class="seg-btn active" data-layout="2x" title="2 AI Affiancate (⇧⌘2)">
-          <span class="seg-icon">▥</span> 2x Split
+          2x Split
         </button>
         <button class="seg-btn" data-layout="3x" title="3 AI Affiancate (⇧⌘3)">
-          <span class="seg-icon">▤</span> 3x Tripla
+          3x Tripla
         </button>
         <button class="seg-btn" data-layout="2x2" title="Griglia 4 AI (⇧⌘4)">
-          <span class="seg-icon">⊞</span> 2x2 Grid
+          2x2 Grid
         </button>
       </div>
 
@@ -51,13 +51,13 @@
 
     <div class="topbar-right">
       <button id="btn-capture-focused" class="action-pill-btn" title="Cattura l'ultima risposta del pannello attivo (⇧⌘C)">
-        <span>📥 Cattura da AI attiva</span>
+        <span>Cattura da AI attiva</span>
       </button>
       <button id="btn-toggle-doc-studio" class="action-pill-btn doc-studio-btn" title="Apri Documento Staffetta (es. 60% ChatGPT + 40% altra AI)">
-        <span>📄 Documento Staffetta</span>
+        <span>Documento Staffetta</span>
       </button>
       <button id="btn-toggle-omnibar" class="action-pill-btn primary-subtle" title="Mostra/Focus Barra Multi-Prompt (⌘K)">
-        <span>⚡ Multi-Prompt</span>
+        <span>Multi-Prompt</span>
         <kbd>⌘K</kbd>
       </button>
     </div>
@@ -84,14 +84,17 @@
         </div>
         <div class="captured-history-list" id="captured-history-list">
           <div class="empty-clips-hint">
-            Clicca <strong>"📥 Cattura risposta"</strong> su qualsiasi pannello (o seleziona del testo) per passare l'output da un'AI all'altra.
+            Clicca <strong>"Cattura"</strong> su qualsiasi pannello (o seleziona del testo) per passare l'output da un'AI all'altra.
           </div>
         </div>
       </div>
 
       <div class="sidebar-footer">
         <div class="session-badge">
-          <span class="session-lock">🔒</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
           <div>
             <div class="session-title">Sessioni Persistenti Attive</div>
             <div class="session-desc">I tuoi login Pro/Plus restano salvati in locale.</div>
@@ -113,13 +116,13 @@
         <div class="relay-drawer hidden" id="relay-drawer">
           <div class="relay-header">
             <div class="relay-source-info">
-              <span class="relay-badge" id="relay-source-badge">📎 Da Claude</span>
+              <span class="relay-badge" id="relay-source-badge">Da Claude</span>
               <span class="relay-char-count" id="relay-char-count">0 caratteri</span>
-              <span class="relay-hint">Scegli cosa chiedere alle altre AI su questo output:</span>
+              <span class="relay-hint">Scegli l'operazione da applicare a questo output:</span>
             </div>
             <div class="relay-header-actions">
-              <button id="btn-copy-captured" class="mini-btn" title="Copia testo catturato negli appunti">📋 Copia</button>
-              <button id="btn-close-relay" class="mini-btn danger" title="Rimuovi contesto allegato">✕ Rimuovi</button>
+              <button id="btn-copy-captured" class="mini-btn" title="Copia testo catturato negli appunti">Copia</button>
+              <button id="btn-close-relay" class="mini-btn danger" title="Rimuovi contesto allegato">Rimuovi</button>
             </div>
           </div>
 
@@ -138,7 +141,7 @@
           <div class="targets-left">
             <span class="targets-label">Invia a:</span>
             <button id="btn-select-visible-targets" class="target-preset-btn active" title="Sincronizza con i pannelli attualmente visibili">
-              🎯 Visibili a schermo
+              Visibili a schermo
             </button>
             <div class="target-chips" id="target-chips">
               <!-- Provider target pills -->
@@ -174,11 +177,11 @@
     <aside class="doc-studio collapsed" id="doc-studio">
       <div class="doc-studio-header">
         <div class="doc-studio-title-row">
-          <span>📄 Documento a Staffetta</span>
+          <span>Documento a Staffetta</span>
           <button id="btn-close-doc-studio" class="icon-btn" title="Chiudi pannello">✕</button>
         </div>
         <p class="doc-studio-subtitle">
-          Dividi la stesura di una ricerca o documento tra due AI in percentuale e unisci tutto in un unico file.
+          Dividi la stesura di una ricerca o documento tra due AI e unisci tutto in un unico file.
         </p>
       </div>
 
@@ -186,10 +189,10 @@
       <div class="doc-pipeline-card">
         <div class="relay-mode-tabs" id="relay-mode-tabs">
           <button class="relay-mode-tab active" data-mode="percentage" title="Dividi il lavoro in percentuale (es. 60% e 40%)">
-            📊 Per Percentuale
+            Per Percentuale
           </button>
           <button class="relay-mode-tab" data-mode="boundary" title="Fai scrivere la 1ª AI fin dove può arrivare senza blocchi, poi passa a Venice AI per la parte non censurata">
-            🔓 Fino al Limite → Uncensored
+            Fino al Limite → Uncensored
           </button>
         </div>
 
@@ -216,7 +219,7 @@
             <label id="lbl-role-1">1ª Parte (<span id="lbl-pct-1">60%</span>)</label>
             <select id="sel-relay-ai-1"></select>
           </div>
-          <div class="pipeline-arrow">➔</div>
+          <div class="pipeline-arrow">→</div>
           <div class="pipeline-ai-col">
             <label id="lbl-role-2">2ª Parte (<span id="lbl-pct-2">40%</span>)</label>
             <select id="sel-relay-ai-2"></select>
@@ -232,18 +235,18 @@
         </div>
 
         <div class="boundary-explainer hidden" id="boundary-explainer">
-          💡 <strong>Come funziona:</strong> La 1ª AI viene istruita a <em>non rifiutare</em> la richiesta ma a scrivere tutta l'analisi/struttura consentita fin dove può arrivare, inserendo il tag <code>[PASSAGGIO]</code> appena tocca il suo limite. Al passo 2, <strong>Venice AI</strong> riprende esattamente da quel punto senza censure.
+          <strong>Funzionamento:</strong> La 1ª AI viene istruita a <em>non rifiutare</em> la richiesta ma a scrivere tutta l'analisi/struttura consentita fin dove può arrivare, inserendo il tag <code>[PASSAGGIO]</code> appena tocca il suo limite. Al passo 2, <strong>Venice AI</strong> riprende esattamente da quel punto senza censure.
         </div>
 
         <div class="pipeline-steps">
           <button id="btn-step1-generate" class="pipeline-step-btn step-primary">
-            <span id="step1-btn-text">1️⃣ Genera il primo <strong id="btn-pct-1">60%</strong> con <strong id="btn-ai-1">ChatGPT</strong></span>
+            <span id="step1-btn-text">1. Genera il primo <strong id="btn-pct-1">60%</strong> con <strong id="btn-ai-1">ChatGPT</strong></span>
           </button>
           <button id="btn-step2-handover" class="pipeline-step-btn step-accent">
-            <span id="step2-btn-text">2️⃣ 🏃 Cattura 1ª parte e fai completare il <strong id="btn-pct-2">40%</strong> a <strong id="btn-ai-2">Venice AI</strong></span>
+            <span id="step2-btn-text">2. Cattura 1ª parte e completa il <strong id="btn-pct-2">40%</strong> con <strong id="btn-ai-2">Venice AI</strong></span>
           </button>
           <button id="btn-step3-append" class="pipeline-step-btn step-success">
-            <span id="step3-btn-text">3️⃣ ➕ Cattura finale da <strong id="btn-ai-2-end">Venice AI</strong> e unisci al Documento</span>
+            <span id="step3-btn-text">3. Cattura finale da <strong id="btn-ai-2-end">Venice AI</strong> e unisci al Documento</span>
           </button>
         </div>
       </div>
@@ -259,20 +262,20 @@
           placeholder="Qui comparirà il documento completo man mano che unisci i pezzi delle varie AI (puoi anche usare il tasto '+ Doc' su ogni pannello AI o modificare liberamente il testo qui)..."
         ></textarea>
         <div class="doc-export-bar">
-          <button id="btn-doc-copy" class="mini-btn" title="Copia tutto il documento">📋 Copia</button>
-          <button id="btn-doc-export-doc" class="mini-btn primary" title="Scarica come file Word (.doc)">💾 Word (.doc)</button>
-          <button id="btn-doc-export-md" class="mini-btn" title="Scarica come Markdown (.md)">💾 .MD</button>
-          <button id="btn-doc-clear" class="mini-btn danger" title="Svuota documento">🗑️ Svuota</button>
+          <button id="btn-doc-copy" class="mini-btn" title="Copia tutto il documento">Copia</button>
+          <button id="btn-doc-export-doc" class="mini-btn primary" title="Scarica come file Word (.doc)">Esporta Word (.doc)</button>
+          <button id="btn-doc-export-md" class="mini-btn" title="Scarica come Markdown (.md)">Esporta .MD</button>
+          <button id="btn-doc-clear" class="mini-btn danger" title="Svuota documento">Svuota</button>
         </div>
       </div>
     </aside>
   </div>
 
-  <!-- Quick 1-Click Relay Popover Modal (when clicking "⚡ Passa a..." on a Pane Header) -->
+  <!-- Quick 1-Click Relay Popover Modal (when clicking "Passa a..." on a Pane Header) -->
   <div class="popover-backdrop hidden" id="quick-relay-modal">
     <div class="quick-relay-card">
       <div class="quick-relay-top">
-        <div class="quick-relay-title" id="quick-relay-title">⚡ Passa risposta di Claude a un'altra AI</div>
+        <div class="quick-relay-title" id="quick-relay-title">Passa risposta di Claude a un'altra AI</div>
         <button id="btn-close-quick-relay" class="icon-btn">✕</button>
       </div>
       <div class="quick-relay-body">
