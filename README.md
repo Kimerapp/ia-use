@@ -72,15 +72,44 @@ Aprendo il pannello **`📄 Documento Staffetta`** in alto a destra puoi sceglie
 
 ---
 
-## 🚀 Installazione ed Esecuzione
+## 👋 Prima volta su GitHub? Leggi qui! (Guida semplice per tutti)
 
-### Requisiti
-- **Node.js** (versione 18 o superiore) — scaricabile da [nodejs.org](https://nodejs.org/)
-- **Git**
+Se non sei un programmatore e questa pagina piena di cartelle e scritte ti sembra complicata, **niente paura**: sei nel posto giusto!
 
-### Avvio Rapido (macOS, Windows, Linux)
+- **Cos'è l'Open Source?** Significa semplicemente che questo programma è **gratuito, trasparente e aperto a tutti**. Chiunque può scaricarlo, usarlo sul proprio computer e vedere come è stato costruito, senza costi nascosti e senza pubblicità.
+- **Cos'è GitHub?** È come una grande libreria mondiale dove vengono custoditi i file dei programmi open source. Non serve nemmeno registrarsi per scaricare il programma!
 
-Apri il Terminale (su macOS/Linux) o PowerShell (su Windows) ed esegui questi 3 comandi:
+---
+
+## 🚀 Come scaricare e avviare il programma (Metodo Facile — Senza Terminale)
+
+Anche se non hai mai usato GitHub in vita tua, ti bastano **3 passaggi** per avere **IA-Use** funzionante sul tuo Mac o PC Windows:
+
+### Passo 1: Installa il "motore" gratuito Node.js (solo la prima volta)
+Il programma usa una tecnologia chiamata *Node.js* per funzionare sul tuo computer.
+1. Vai sul sito ufficiale **[https://nodejs.org](https://nodejs.org/)**
+2. Clicca sul bottone verde **`Scarica Node.js (LTS)`**.
+3. Apri il file scaricato e installalo come un normalissimo programma (cliccando sempre *"Avanti / Continua"* fino alla fine).
+
+### Passo 2: Scarica la cartella del programma da questa pagina
+1. Guarda in alto a destra in questa pagina di GitHub: vedrai un **bottone verde con scritto `<> Code`**.
+2. Cliccaci sopra: si aprirà un piccolo menu.
+3. Clicca su **`Download ZIP`** (ultima voce in basso).
+4. Vai nella tua cartella *Download* ed **estrai il file `.zip`** (su Mac basta farci doppio click sopra; su Windows clicca col tasto destro → *"Estrai tutto..."*).
+
+### Passo 3: Avvia IA-Use con un doppio click!
+Apri la cartella `ia-use-main` appena estratta:
+- 🍎 **Se hai un Mac:** fai doppio click sul file **`Avvia-IA-Use-Mac.command`**.
+  *(Nota: se il Mac ti chiede conferma perché il file proviene da internet, clicca su "Apri" oppure vai in Impostazioni di Sistema → Privacy e Sicurezza → "Apri comunque").*
+- 🪟 **Se hai Windows:** fai doppio click sul file **`Avvia-IA-Use-Windows.bat`**.
+
+Al primo avvio la finestra preparerà il programma in automatico (ci vogliono circa 20 secondi) e subito dopo si aprirà **IA-Use**! Dalle volte successive si aprirà istantaneamente.
+
+---
+
+## 💻 Installazione da Terminale (Per Sviluppatori / Utenti Esperti)
+
+Se conosci già Git e il Terminale, ti bastano questi 3 comandi:
 
 ```bash
 # 1. Clona il repository
