@@ -149,7 +149,10 @@
       pane.classList.remove('loading');
     });
 
+    let domReady = false;
+    webview.addEventListener('did-start-navigation', (event) => { if (event.isMainFrame && !event.isInPlace) domReady = false; });
     webview.addEventListener('dom-ready', () => {
+      domReady = true;
       const helperScript = buildInPageRelayHelperScript(provider);
       webview.executeJavaScript(helperScript).catch(() => {});
     });
@@ -174,10 +177,11 @@
       if (action === 'back' && webview.canGoBack()) webview.goBack();
       if (action === 'forward' && webview.canGoForward()) webview.goForward();
       if (action === 'reload') webview.reload();
-      if (action === 'home') webview.loadURL(provider.url);
+      if (action === 'home') webview.loadURL(new URL(provider.url, window.location.href).href);
       if (action === 'external') {
         const currentUrl = webview.getURL() || provider.url;
-        window.electronAPI?.openExternal(currentUrl);
+        try { await window.electronAPI.openExternal(currentUrl); }
+        catch (_) { showToast('Impossibile aprire il collegamento.', '#EF4444'); }
       }
       if (action === 'capture') {
         await captureFromProvider(provider.id, false);
@@ -191,7 +195,7 @@
     });
 
     stageGrid.appendChild(pane);
-    const entry = { pane, webview, provider };
+    const entry = { pane, webview, provider, isReady: () => domReady };
     mountedPanes.set(providerId, entry);
     return entry;
   }
@@ -410,6 +414,12 @@
     }
   }
 
+  relayContentEditor.addEventListener('input', () => {
+    if (!state.capturedContext) return;
+    state.capturedContext.text = relayContentEditor.value;
+    relayCharCountEl.textContent = `${relayContentEditor.value.length} caratteri`;
+  });
+
   function renderCapturedHistory() {
     capturedHistoryListEl.innerHTML = '';
     if (state.capturedHistory.length === 0) {
@@ -531,46 +541,62 @@
   // MULTI-PROMPT DISPATCH ENGINE
   // ==========================================
   async function dispatchPromptToProviders(targetIds, promptText, autoSubmit) {
-    if (!promptText || !promptText.trim()) return;
-
-    window.electronAPI?.copyText(promptText);
-
+    if (!promptText || !promptText.trim()) return { failed: targetIds };
+    let copied = false;
+    try { await window.electronAPI.copyText(promptText); copied = true; } catch (_) {}
     const succeeded = [];
     const failed = [];
-
-    await Promise.all(
-      targetIds.map(async (providerId) => {
-        const entry = ensurePaneMounted(providerId);
-        if (!entry) return;
-
-        try {
+    const prepared = [];
+    await Promise.all(targetIds.map(async (providerId) => {
+      const entry = ensurePaneMounted(providerId);
+      if (!entry) { failed.push(providerId); return; }
+      // Keep hidden targets laid out off-screen while their editor is located.
+      const hidden = !state.visibleProviders.includes(providerId);
+      const oldStyle = entry.pane.getAttribute('style');
+      if (hidden) Object.assign(entry.pane.style, { display: 'flex', position: 'fixed', left: '-10000px', top: '0', width: '800px', height: '600px', opacity: '0' });
+      try {
+        const deadline = Date.now() + 12000;
+        let result = null;
+        while (Date.now() < deadline) {
+          if (!entry.isReady()) { await new Promise(resolve => setTimeout(resolve, 200)); continue; }
           const script = buildInjectPromptScript(entry.provider, promptText, autoSubmit);
-          const res = await entry.webview.executeJavaScript(script);
-          if (res && res.ok) {
-            succeeded.push(entry.provider.name);
-          } else {
-            failed.push(entry.provider.name);
-          }
-        } catch (_err) {
-          failed.push(entry.provider.name);
+          result = await entry.webview.executeJavaScript(script);
+          if (result?.ok || result?.code !== 'input-not-found') break;
+          await new Promise(resolve => setTimeout(resolve, 300));
         }
-      })
-    );
+        if (result?.ok) succeeded.push(providerId);
+        else {
+          failed.push(providerId);
+          if (result?.code === 'submit-unavailable') prepared.push(providerId);
+        }
+      } catch (_) { failed.push(providerId); }
+      finally {
+        if (hidden) {
+          if (oldStyle === null) entry.pane.removeAttribute('style');
+          else entry.pane.setAttribute('style', oldStyle);
+        }
+      }
+    }));
+    const names = ids => ids.map(id => getProvider(id)?.name || id).join(', ');
+    if (succeeded.length) showToast(`${autoSubmit ? 'Inviato' : 'Preparato'} su: ${names(succeeded)}`, '#10B981');
+    if (failed.length) {
+      const notReady = failed.filter(id => !prepared.includes(id));
+      const details = [];
+      if (prepared.length) details.push(`Testo inserito ma non inviato su ${names(prepared)}: pulsante di invio non disponibile.`);
+      if (notReady.length) details.push(`Invio non riuscito su ${names(notReady)}: verifica il login e il caricamento.`);
+      showToast(`${details.join(' ')}${copied ? ' Prompt copiato negli appunti.' : ''}`, '#F59E0B');
+    }
+    return { succeeded, failed, prepared };
 
-    if (succeeded.length > 0) {
-      showToast(`Inviato a: ${succeeded.join(', ')}`, '#10B981');
-    }
-    if (failed.length > 0) {
-      showToast(
-        `Input non trovato su ${failed.join(', ')} (verifica il login; prompt copiato negli appunti).`,
-        '#F59E0B'
-      );
-    }
   }
 
+  let omnibarSending = false;
   async function handleOmnibarSend() {
+    if (omnibarSending) return;
     const customNote = omnibarInput.value.trim();
-    const hasRelay = Boolean(state.capturedContext);
+    const relayAtSend = state.capturedContext;
+    const hasRelay = Boolean(relayAtSend);
+    const relayTextAtSend = relayContentEditor.value;
 
     if (!customNote && !hasRelay) {
       showToast('Scrivi un prompt o cattura prima una risposta da un pannello AI.');
@@ -579,7 +605,8 @@
 
     let finalPrompt = customNote;
     if (hasRelay) {
-      const editedContext = relayContentEditor.value.trim() || state.capturedContext.text;
+      const editedContext = relayContentEditor.value.trim();
+      if (!editedContext) { showToast('Il contesto è vuoto. Inserisci del testo o chiudi il contesto.', '#F59E0B'); return; }
       const tpl =
         RELAY_TEMPLATES.find((t) => t.id === state.capturedContext.templateId) || RELAY_TEMPLATES[0];
       finalPrompt = tpl.buildPrompt(state.capturedContext.sourceName, editedContext, customNote);
@@ -591,13 +618,32 @@
       return;
     }
 
-    omnibarInput.value = '';
-    omnibarInput.style.height = 'auto';
-    if (hasRelay) {
-      clearCapturedContext();
+    const syncAtSend = state.syncTargetsWithVisible;
+    const autoSubmitAtSend = chkAutoSubmit.checked;
+    const templateAtSend = relayAtSend?.templateId;
+    omnibarSending = true;
+    let result;
+    try { result = await dispatchPromptToProviders(targets, finalPrompt, autoSubmitAtSend); }
+    finally { omnibarSending = false; }
+    const unchanged = omnibarInput.value.trim() === customNote &&
+      state.capturedContext === relayAtSend && relayContentEditor.value === relayTextAtSend &&
+      relayAtSend?.templateId === templateAtSend && chkAutoSubmit.checked === autoSubmitAtSend &&
+      state.syncTargetsWithVisible === syncAtSend && state.selectedTargets.size === targets.length &&
+      targets.every(id => state.selectedTargets.has(id));
+    if (result.failed.length && result.succeeded.length && unchanged) {
+      state.syncTargetsWithVisible = false;
+      state.selectedTargets = new Set(result.failed);
+      updateUI();
+      const names = ids => ids.map(id => getProvider(id)?.name || id).join(', ');
+      const preparedNotice = result.prepared.length ? ` Testo inserito ma non inviato su ${names(result.prepared)}.` : '';
+      showToast(`Per riprovare sono selezionati solo: ${names(result.failed)}.${preparedNotice} Controlla i pannelli prima di riprovare.`, '#F59E0B');
+    }
+    if (!result.failed.length && omnibarInput.value.trim() === customNote) {
+      omnibarInput.value = '';
+      omnibarInput.style.height = 'auto';
+      if (hasRelay && state.capturedContext === relayAtSend && relayContentEditor.value === relayTextAtSend && relayAtSend.templateId === templateAtSend) clearCapturedContext();
     }
 
-    await dispatchPromptToProviders(targets, finalPrompt, chkAutoSubmit.checked);
   }
 
   // ==========================================
@@ -616,6 +662,7 @@
   }
 
   function updateUI() {
+    normalizeVisibleProviders();
     stageGrid.className = `stage-grid layout-${state.layoutMode}`;
     layoutSwitcherEl.querySelectorAll('.seg-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.layout === state.layoutMode);
@@ -743,11 +790,11 @@
 
   document.getElementById('btn-close-relay').addEventListener('click', clearCapturedContext);
 
-  document.getElementById('btn-copy-captured').addEventListener('click', () => {
+  document.getElementById('btn-copy-captured').addEventListener('click', async () => {
     const txt = relayContentEditor.value || state.capturedContext?.text || '';
     if (txt) {
-      window.electronAPI?.copyText(txt);
-      showToast('Testo copiato negli appunti');
+      try { await window.electronAPI.copyText(txt); showToast('Testo copiato negli appunti'); }
+      catch (_) { showToast('Impossibile copiare il testo.', '#EF4444'); }
     }
   });
 
@@ -822,7 +869,11 @@
     }
 
     selRelayAi1.value = 'chatgpt';
-    selRelayAi2.value = AI_PROVIDERS.some((p) => p.id === 'venice') ? 'venice' : 'claude';
+    selRelayAi2.value = AI_PROVIDERS.some((p) => p.id === 'ollama')
+      ? 'ollama'
+      : AI_PROVIDERS.some((p) => p.id === 'venice')
+      ? 'venice'
+      : 'claude';
 
     unifiedDocTextarea.value = localStorage.getItem('ia_use_unified_doc') || '';
     setDocRelayMode('boundary');
@@ -916,6 +967,7 @@
       const rawExtracted = res.text.trim();
       const docText = cleanBoundaryMarker ? stripHandoverMarkerForDoc(rawExtracted) : rawExtracted;
 
+      if (replaceAll && unifiedDocTextarea.value.trim() && !window.confirm('Il documento contiene già del testo. Vuoi sostituirlo con la risposta catturata?')) return null;
       docStudioEl.classList.remove('collapsed');
       if (replaceAll || !unifiedDocTextarea.value.trim()) {
         unifiedDocTextarea.value = docText;
@@ -985,7 +1037,11 @@
     await dispatchPromptToProviders([ai1Id], promptStep1, true);
   });
 
+  let step2InFlight = false;
   document.getElementById('btn-step2-handover')?.addEventListener('click', async () => {
+    if (step2InFlight) return;
+    step2InFlight = true;
+    try {
     const pct1 = Number(rngSplitPct.value) || 60;
     const pct2 = 100 - pct1;
     const ai1Id = selRelayAi1.value;
@@ -1019,6 +1075,7 @@
     }
 
     await dispatchPromptToProviders([ai2Id], promptStep2, true);
+    } finally { step2InFlight = false; }
   });
 
   document.getElementById('btn-step3-append')?.addEventListener('click', async () => {
@@ -1026,14 +1083,14 @@
     await appendProviderOutputToDoc(ai2Id, false);
   });
 
-  document.getElementById('btn-doc-copy')?.addEventListener('click', () => {
+  document.getElementById('btn-doc-copy')?.addEventListener('click', async () => {
     const text = unifiedDocTextarea.value.trim();
     if (!text) {
       showToast('Il documento è vuoto.');
       return;
     }
-    window.electronAPI?.copyText(text);
-    showToast('Documento completo copiato negli appunti', '#10B981');
+    try { await window.electronAPI.copyText(text); showToast('Documento completo copiato negli appunti', '#10B981'); }
+    catch (_) { showToast('Impossibile copiare il documento.', '#EF4444'); }
   });
 
   function downloadFile(filename, content, mimeType) {

@@ -15,7 +15,8 @@
   "scripts": {
     "prestart": "node scripts/ensure-electron.js",
     "start": "electron .",
-    "build:mac": "npx electron-builder --mac --dir"
+    "build:mac": "npx electron-builder --mac --dir",
+    "test": "node --test test/regression.test.js && electron test/electron-regression.js"
   },
   "keywords": [
     "ai",

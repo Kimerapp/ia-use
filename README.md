@@ -68,7 +68,8 @@ Aprendo il pannello **`Documento Staffetta`** in alto a destra puoi scegliere tr
 | `⌘5` / `Ctrl+5` | **DeepSeek** | `chat.deepseek.com` | Ragionamento logico/matematico (R1) e codice |
 | `⌘6` / `Ctrl+6` | **Grok** | `grok.com` | Dati real-time e stile diretto |
 | `⌘7` / `Ctrl+7` | **Google AI Studio** | `aistudio.google.com` | Controllo parametri avanzati e prompt engineering |
-| `⌘8` / `Ctrl+8` | **Venice AI** | `venice.ai/chat` | Modelli non censurati e orientati alla privacy |
+| `⌘8` / `Ctrl+8` | **Venice AI** | `venice.ai/chat` | Modelli cloud non censurati e orientati alla privacy |
+| `⌘9` / `Ctrl+9` | **Ollama Locale** | `127.0.0.1:11434` | I tuoi modelli AI locali (Uncensored / Abliterated) su Mac/PC |
 
 ---
 
@@ -198,3 +199,7 @@ Contributi, segnalazioni di bug e richieste di nuovi provider AI sono benvenuti:
 ## Licenza
 
 Distribuito sotto licenza **MIT**. Vedi il file [LICENSE](file:///Users/AngeloRaucci_1/Desktop/Claude/Progetti/IA-Use/LICENSE) per maggiori dettagli.
+
+## Verifiche automatiche
+
+Dopo aver installato le dipendenze con `npm install`, esegui `npm test` per avviare le verifiche di sicurezza e i test di integrazione dell’interfaccia con Electron. I test usano un profilo temporaneo, pagine locali e appunti simulati; non accedono agli account AI o agli appunti del sistema. Le verifiche di integrazione richiedono un ambiente grafico disponibile.
