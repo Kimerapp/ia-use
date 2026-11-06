@@ -184,8 +184,17 @@
 
       <!-- Relay Pipeline Configurator -->
       <div class="doc-pipeline-card">
+        <div class="relay-mode-tabs" id="relay-mode-tabs">
+          <button class="relay-mode-tab active" data-mode="percentage" title="Dividi il lavoro in percentuale (es. 60% e 40%)">
+            📊 Per Percentuale
+          </button>
+          <button class="relay-mode-tab" data-mode="boundary" title="Fai scrivere la 1ª AI fin dove può arrivare senza blocchi, poi passa a Venice AI per la parte non censurata">
+            🔓 Fino al Limite → Uncensored
+          </button>
+        </div>
+
         <div class="pipeline-field">
-          <label for="doc-topic-input">Argomento della Ricerca / Documento:</label>
+          <label for="doc-topic-input" id="lbl-doc-topic">Argomento della Ricerca / Documento:</label>
           <input
             type="text"
             id="doc-topic-input"
@@ -193,19 +202,28 @@
           />
         </div>
 
+        <div class="pipeline-field hidden" id="boundary-extra-field">
+          <label for="doc-unfiltered-input">Direttiva riservata alla 2ª AI (non mostrata a ChatGPT):</label>
+          <input
+            type="text"
+            id="doc-unfiltered-input"
+            placeholder="Opzionale: dettagli senza filtri che svilupperà solo Venice AI..."
+          />
+        </div>
+
         <div class="pipeline-split-row">
           <div class="pipeline-ai-col">
-            <label>1ª Parte (<span id="lbl-pct-1">60%</span>)</label>
+            <label id="lbl-role-1">1ª Parte (<span id="lbl-pct-1">60%</span>)</label>
             <select id="sel-relay-ai-1"></select>
           </div>
           <div class="pipeline-arrow">➔</div>
           <div class="pipeline-ai-col">
-            <label>2ª Parte (<span id="lbl-pct-2">40%</span>)</label>
+            <label id="lbl-role-2">2ª Parte (<span id="lbl-pct-2">40%</span>)</label>
             <select id="sel-relay-ai-2"></select>
           </div>
         </div>
 
-        <div class="pipeline-slider-wrap">
+        <div class="pipeline-slider-wrap" id="pipeline-slider-wrap">
           <input type="range" id="rng-split-pct" min="20" max="80" step="5" value="60" />
           <div class="pipeline-slider-labels">
             <span id="slider-caption-left">60% su ChatGPT</span>
@@ -213,15 +231,19 @@
           </div>
         </div>
 
+        <div class="boundary-explainer hidden" id="boundary-explainer">
+          💡 <strong>Come funziona:</strong> La 1ª AI viene istruita a <em>non rifiutare</em> la richiesta ma a scrivere tutta l'analisi/struttura consentita fin dove può arrivare, inserendo il tag <code>[PASSAGGIO]</code> appena tocca il suo limite. Al passo 2, <strong>Venice AI</strong> riprende esattamente da quel punto senza censure.
+        </div>
+
         <div class="pipeline-steps">
           <button id="btn-step1-generate" class="pipeline-step-btn step-primary">
-            <span>1️⃣ Genera il primo <strong id="btn-pct-1">60%</strong> con <strong id="btn-ai-1">ChatGPT</strong></span>
+            <span id="step1-btn-text">1️⃣ Genera il primo <strong id="btn-pct-1">60%</strong> con <strong id="btn-ai-1">ChatGPT</strong></span>
           </button>
           <button id="btn-step2-handover" class="pipeline-step-btn step-accent">
-            <span>2️⃣ 🏃 Cattura 1ª parte e fai completare il <strong id="btn-pct-2">40%</strong> a <strong id="btn-ai-2">Venice AI</strong></span>
+            <span id="step2-btn-text">2️⃣ 🏃 Cattura 1ª parte e fai completare il <strong id="btn-pct-2">40%</strong> a <strong id="btn-ai-2">Venice AI</strong></span>
           </button>
           <button id="btn-step3-append" class="pipeline-step-btn step-success">
-            <span>3️⃣ ➕ Cattura finale da <strong id="btn-ai-2-end">Venice AI</strong> e unisci al Documento</span>
+            <span id="step3-btn-text">3️⃣ ➕ Cattura finale da <strong id="btn-ai-2-end">Venice AI</strong> e unisci al Documento</span>
           </button>
         </div>
       </div>
