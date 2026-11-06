@@ -1,0 +1,55 @@
+{
+  "name": "ia-use",
+  "productName": "IA-Use",
+  "version": "1.0.0",
+  "description": "Multi-AI Desktop Workspace & Context Orchestrator (ChatGPT, Claude, Gemini, Venice AI, Perplexity, DeepSeek, Grok)",
+  "main": "src/main/main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kimerapp/ia-use.git"
+  },
+  "homepage": "https://github.com/Kimerapp/ia-use#readme",
+  "bugs": {
+    "url": "https://github.com/Kimerapp/ia-use/issues"
+  },
+  "scripts": {
+    "prestart": "node scripts/ensure-electron.js",
+    "start": "electron .",
+    "build:mac": "npx electron-builder --mac --dir"
+  },
+  "keywords": [
+    "ai",
+    "chatgpt",
+    "claude",
+    "gemini",
+    "venice-ai",
+    "perplexity",
+    "deepseek",
+    "grok",
+    "workspace",
+    "electron",
+    "multi-prompt"
+  ],
+  "author": "Kimerapp",
+  "license": "MIT",
+  "build": {
+    "appId": "com.kimerapp.iause",
+    "productName": "IA-Use",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "devDependencies": {
+    "electron": "^34.0.0"
+  }
+}
